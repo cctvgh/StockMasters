@@ -686,6 +686,7 @@ def analyze(code):
     with _cache_lock:
         ent = _cache.get(code)
         if ent and time.time() - ent[0] < CACHE_TTL:
+            _save_history(ent[1])
             return ent[1]
 
     hist = get_history(code, market)
@@ -757,7 +758,139 @@ def analyze(code):
 
     with _cache_lock:
         _cache[code] = (time.time(), result)
+    _save_history(result)
     return result
+
+
+# ============ 历史记录 ============
+
+HISTORY_FILE = BASE_DIR / "data" / "history.json"
+
+def _save_history(result):
+    """分析结果自动存档到 data/history.json"""
+    try:
+        HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        history = []
+        if HISTORY_FILE.exists():
+            history = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
+        entry = {
+            "code": result["code"],
+            "name": result["name"],
+            "score": result["consensus"]["score"],
+            "signal": result["consensus"]["signal"],
+            "price": result["price"].get("price"),
+            "date": result["timestamp"][:10],
+            "time": result["timestamp"],
+            "confidence": result["consensus"]["confidence"],
+            "distribution": result["consensus"]["distribution"],
+        }
+        history.append(entry)
+        # 保留最近 2000 条
+        if len(history) > 2000:
+            history = history[-2000:]
+        HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def get_history_records(filters=None):
+    """读取历史记录, 支持筛选"""
+    if not HISTORY_FILE.exists():
+        return []
+    history = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
+    if filters:
+        if filters.get("code"):
+            history = [h for h in history if h["code"] == filters["code"]]
+        if filters.get("signal"):
+            history = [h for h in history if filters["signal"] in h["signal"]]
+        if filters.get("date"):
+            history = [h for h in history if h["date"] == filters["date"]]
+    return list(reversed(history[-200:]))  # 最新200条, 倒序
+
+
+# ============ 定时盘后分析 + Webhook 推送 ============
+
+SETTINGS_FILE = BASE_DIR / "data" / "settings.json"
+
+def load_settings():
+    if SETTINGS_FILE.exists():
+        try:
+            return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {"cron_time": "15:30", "webhook_url": "", "watchlist": []}
+
+def save_settings(s):
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS_FILE.write_text(json.dumps(s, ensure_ascii=False, indent=2), encoding="utf-8")
+
+_cron_timer = None
+_cron_lock = threading.Lock()
+
+def _send_webhook(url, results):
+    """推送分析结果到飞书/企微 Webhook"""
+    if not url:
+        return
+    lines = [f"StockMasters 盘后分析报告 ({time.strftime('%Y-%m-%d %H:%M')})\n"]
+    for r in results:
+        c = r.get("consensus", {})
+        p = r.get("price", {})
+        lines.append(
+            f"{'🟢' if c.get('score',0)>=6.5 else '🟡' if c.get('score',0)>=3.5 else '🔴'} "
+            f"{r.get('name','?')}({r.get('code','?')})  评分{c.get('score',0)}  {c.get('signal','?')}\n"
+            f"  价格:{p.get('price','?')}  置信度:{int(c.get('confidence',0)*100)}%"
+        )
+    payload = {"msg_type": "text", "content": {"text": "\n".join(lines)}}
+    try:
+        _req.post(url, json=payload, timeout=15)
+    except Exception:
+        pass
+
+def _run_cron():
+    """执行一次定时分析"""
+    s = load_settings()
+    watchlist = s.get("watchlist", [])
+    if not watchlist:
+        return
+    results = []
+    for code in watchlist:
+        try:
+            r = analyze(code)
+            results.append(r)
+            time.sleep(1)
+        except Exception:
+            pass
+    if results:
+        _send_webhook(s.get("webhook_url", ""), results)
+
+def schedule_cron():
+    """根据设置重新调度定时任务"""
+    global _cron_timer
+    with _cron_lock:
+        if _cron_timer:
+            _cron_timer.cancel()
+            _cron_timer = None
+        s = load_settings()
+        cron_time = s.get("cron_time", "15:30")
+        try:
+            hour, minute = map(int, cron_time.split(":"))
+        except Exception:
+            return
+        now = time.time()
+        # 计算今天剩余秒数到目标时间
+        import datetime
+        target = datetime.datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if target.timestamp() <= now:
+            target = target + datetime.timedelta(days=1)
+        delay = target.timestamp() - now
+        def _cron_loop():
+            while True:
+                _run_cron()
+                # 下一天同一时间
+                time.sleep(86400)
+        _cron_timer = threading.Timer(delay, _cron_loop)
+        _cron_timer.daemon = True
+        _cron_timer.start()
 
 
 # ============ HTTP 服务 ============
@@ -777,12 +910,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+
         if parsed.path in ("/", "/index.html"):
             fp = BASE_DIR / "index.html"
             if fp.exists():
                 self._send(fp.read_text(encoding="utf-8"))
             else:
                 self._send("<h3>index.html 缺失</h3>", code=500)
+
         elif parsed.path == "/api/analyze":
             qs = parse_qs(parsed.query)
             code = (qs.get("code") or [""])[0].strip()
@@ -798,11 +933,88 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(json.dumps({"error": f"分析失败: {str(e)[:200]}"},
                                       ensure_ascii=False),
                            "application/json; charset=utf-8", 502)
+
+        elif parsed.path == "/api/history":
+            qs = parse_qs(parsed.query)
+            filters = {}
+            if qs.get("code"): filters["code"] = qs["code"][0]
+            if qs.get("signal"): filters["signal"] = qs["signal"][0]
+            if qs.get("date"): filters["date"] = qs["date"][0]
+            self._send(json.dumps(get_history_records(filters), ensure_ascii=False),
+                       "application/json; charset=utf-8")
+
+        elif parsed.path == "/api/settings":
+            self._send(json.dumps(load_settings(), ensure_ascii=False),
+                       "application/json; charset=utf-8")
+
+        elif parsed.path == "/api/cron-status":
+            s = load_settings()
+            self._send(json.dumps({
+                "cron_time": s.get("cron_time", ""),
+                "webhook_url": s.get("webhook_url", ""),
+                "watchlist_count": len(s.get("watchlist", [])),
+                "timer_active": _cron_timer is not None and _cron_timer.is_alive(),
+            }, ensure_ascii=False), "application/json; charset=utf-8")
+
+        elif parsed.path == "/api/cron-run":
+            threading.Thread(target=_run_cron, daemon=True).start()
+            self._send(json.dumps({"status": "started"}, ensure_ascii=False),
+                       "application/json; charset=utf-8")
+
+        else:
+            self._send("Not Found", code=404)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length).decode("utf-8") if length else "{}"
+
+        if parsed.path == "/api/settings":
+            try:
+                data = json.loads(body)
+                save_settings(data)
+                schedule_cron()
+                self._send(json.dumps({"status": "ok"}, ensure_ascii=False),
+                           "application/json; charset=utf-8")
+            except Exception as e:
+                self._send(json.dumps({"error": str(e)}, ensure_ascii=False),
+                           "application/json; charset=utf-8", 400)
+
+        elif parsed.path == "/api/batch":
+            try:
+                data = json.loads(body)
+                codes = data.get("codes", [])
+                if not codes or len(codes) > 20:
+                    self._send(json.dumps({"error": "请提供1-20个股票代码"},
+                                         ensure_ascii=False),
+                               "application/json; charset=utf-8", 400)
+                    return
+                results = []
+                for code in codes:
+                    try:
+                        r = analyze(code)
+                        results.append({
+                            "code": r["code"], "name": r["name"],
+                            "score": r["consensus"]["score"],
+                            "signal": r["consensus"]["signal"],
+                            "price": r["price"].get("price"),
+                            "confidence": r["consensus"]["confidence"],
+                            "distribution": r["consensus"]["distribution"],
+                        })
+                    except Exception as e:
+                        results.append({"code": code, "error": str(e)[:100]})
+                    time.sleep(0.5)
+                self._send(json.dumps(results, ensure_ascii=False),
+                           "application/json; charset=utf-8")
+            except Exception as e:
+                self._send(json.dumps({"error": str(e)}, ensure_ascii=False),
+                           "application/json; charset=utf-8", 400)
         else:
             self._send("Not Found", code=404)
 
 
 def main():
+    schedule_cron()  # 启动时恢复定时任务
     server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     print(f"StockMasters A股/B股/港股大师分析系统")
     print(f"访问: http://localhost:{PORT}")

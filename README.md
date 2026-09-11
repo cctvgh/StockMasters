@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '8fe664ce-f03a-4e55-a6ad-f523590dff28'
-  PropagateID: '8fe664ce-f03a-4e55-a6ad-f523590dff28'
-  ReservedCode1: '107119d2-0d6b-47be-be4b-3313eaed6d00'
-  ReservedCode2: '107119d2-0d6b-47be-be4b-3313eaed6d00'
+  ProduceID: 'e2300279-0fce-4634-be1d-78002e7cd0a0'
+  PropagateID: 'e2300279-0fce-4634-be1d-78002e7cd0a0'
+  ReservedCode1: '3fbc3650-15bd-4dea-89ba-995209d710bf'
+  ReservedCode2: '3fbc3650-15bd-4dea-89ba-995209d710bf'
 ---
 
 <div align="center">
@@ -44,11 +44,26 @@ Six Investment Masters · Multi-Market Stock Analysis for A-Shares, B-Shares & H
 
 ![B股分析截图](docs/screenshot-bstock.png)
 
+#### 自选股批量分析
+
+![自选股截图](docs/screenshot-watchlist.png)
+
+#### 历史记录
+
+![历史记录截图](docs/screenshot-history.png)
+
+#### 定时推送设置
+
+![定时推送截图](docs/screenshot-cron.png)
+
 ### 核心特点
 
 - **三大市场全覆盖**：A股（沪深600/000/300/688）、B股（深B 200/沪B 900）、港股（1-5位代码），自动识别市场类型
 - **六位投资大师独立评分**：价值大师（格雷厄姆）、质量大师（巴菲特）、成长大师（林奇）、红利大师、动量大师、安全边际大师——每位大师用不同指标体系打分，互不干扰
 - **加权共识裁决**：六位大师按权重综合，输出 0-10 分评分 + 买入/持有/卖出信号 + 置信度 + 多空分布
+- **自选股批量分析**：添加自选股后一键批量分析，结果以表格展示，点击即可跳转个股详情
+- **分析历史记录**：每次分析自动存档，支持按代码/信号/日期筛选，点击记录可重新查看
+- **定时盘后自动推送**：设置每日收盘时间自动分析自选股，通过飞书/企微 Webhook 推送结果
 - **国内数据源直连**：基于 akshare 开源库，数据来自东方财富、同花顺、新浪财经、百度估值，无需翻墙，受限内网环境可用
 - **零外部依赖前端**：纯原生 HTML/CSS/JS，白底淡蓝风格，无 React/Vue/jQuery，双击即运行
 - **一键启停**：BAT 脚本启动/停止，无需命令行操作
@@ -106,6 +121,9 @@ Enter a stock code, and six investment masters analyze it from their respective 
 - **Three Markets Covered**: A-Shares (Shanghai/Shenzhen 600/000/300/688), B-Shares (Shenzhen 200 / Shanghai 900), Hong Kong Stocks (1-5 digit codes) — auto-detected
 - **Six Master Agents**: Value (Graham), Quality (Buffett), Growth (Lynch), Dividend, Momentum, and Margin of Safety — each scores independently using distinct indicator frameworks
 - **Weighted Consensus**: Masters' scores combine into a 0-10 rating with Buy/Hold/Sell signal, confidence level, and bull/neutral/bear distribution
+- **Watchlist Batch Analysis**: Add stocks to watchlist and analyze all at once, results in sortable table, click to drill into details
+- **Analysis History**: Every analysis auto-archived, filterable by code/signal/date, click to re-view
+- **Scheduled Post-Close Push**: Set daily auto-analysis time, push results to Feishu/WeCom Webhook
 - **Domestic Data Sources**: Built on akshare (open-source), data from East Money, 10jqka (THS), Sina Finance, and Baidu Valuation — works behind corporate firewalls without VPN
 - **Zero-Dependency Frontend**: Pure HTML/CSS/JS, no React/Vue/jQuery, clean blue-on-white design, runs by double-clicking
 - **One-Click Start/Stop**: BAT scripts included, no command-line knowledge required
@@ -181,14 +199,18 @@ The result: a multi-master investment analysis system that works behind restrict
 
 ```
 StockMasters/
-├── server.py              # 后端：数据引擎 + 评分引擎 + HTTP服务
-├── index.html             # 前端：原生HTML单页应用
+├── server.py              # 后端：数据引擎 + 评分引擎 + HTTP服务 + 历史记录 + 定时任务
+├── index.html             # 前端：原生HTML单页应用（4个Tab：个股/自选/历史/定时）
 ├── 启动大师分析.bat        # Windows一键启动
 ├── 停止大师分析.bat        # Windows一键停止
 ├── docs/
-│   ├── screenshot-astock.png    # A股分析截图
+│   ├── screenshot-astock.png      # A股分析截图
 │   ├── screenshot-hkstock.png   # 港股分析截图
-│   └── screenshot-bstock.png    # B股分析截图
+│   ├── screenshot-bstock.png    # B股分析截图
+│   ├── screenshot-watchlist.png  # 自选股截图
+│   ├── screenshot-history.png   # 历史记录截图
+│   └── screenshot-cron.png      # 定时推送截图
+├── data/                  # 运行时生成（历史记录、设置）
 ├── .gitignore
 └── README.md
 ```

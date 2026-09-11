@@ -1,6 +1,7 @@
-﻿venv/
+venv/
 __pycache__/
 *.pyc
 .dividend_cache.json
+data/
 *.log
 *.err
