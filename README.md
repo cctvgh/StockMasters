@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'e2300279-0fce-4634-be1d-78002e7cd0a0'
-  PropagateID: 'e2300279-0fce-4634-be1d-78002e7cd0a0'
-  ReservedCode1: '3fbc3650-15bd-4dea-89ba-995209d710bf'
-  ReservedCode2: '3fbc3650-15bd-4dea-89ba-995209d710bf'
+  ProduceID: '1f812c3b-d85f-42c6-b690-42cc7f875481'
+  PropagateID: '1f812c3b-d85f-42c6-b690-42cc7f875481'
+  ReservedCode1: '8b5b3090-32e5-4f53-8b73-73d317377bc4'
+  ReservedCode2: '8b5b3090-32e5-4f53-8b73-73d317377bc4'
 ---
 
 <div align="center">
@@ -110,6 +110,8 @@ venv\Scripts\python.exe server.py
 
 最终成果：一个在受限内网下可用的、覆盖 A 股/B 股/港股三大市场的多大师投资分析系统。
 
+> 完整的系统架构、评分体系、数据通道与 API 文档见 **[docs/architecture.md](docs/architecture.md)**（含 Mermaid 流程图）。
+
 ---
 
 ## English
@@ -204,6 +206,7 @@ StockMasters/
 ├── 启动大师分析.bat        # Windows一键启动
 ├── 停止大师分析.bat        # Windows一键停止
 ├── docs/
+│   ├── architecture.md          # 系统架构详解（含Mermaid流程图）
 │   ├── screenshot-astock.png      # A股分析截图
 │   ├── screenshot-hkstock.png   # 港股分析截图
 │   ├── screenshot-bstock.png    # B股分析截图
