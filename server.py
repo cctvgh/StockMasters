@@ -670,13 +670,328 @@ def master_margin(val):
     return s, [f"当前{metric}位于近3年 {pct:.0f}% 分位, {desc}"]
 
 
+def master_fisher(fin):
+    """费雪大师 - 成长质量: ROE+高毛利+营收增长（Scuttlebutt 优选成长股）"""
+    reasons, scores = [], []
+    roe = fin.get("roe")
+    gm = fin.get("gross_margin")
+    rg = fin.get("revenue_growth")
+    if roe is not None:
+        s, _ = band(roe, [(8, 2), (12, 4), (18, 7), (25, 8.5)], 10)
+        reasons.append(f"ROE {roe:.1f}%" + ("，成长质量高" if roe >= 18 else "，尚可" if roe >= 12 else "，偏弱"))
+        scores.append(s)
+    if gm is not None:
+        s, _ = band(gm, [(15, 2), (25, 4), (40, 6), (55, 8)], 10)
+        reasons.append(f"毛利率 {gm:.1f}%")
+        scores.append(s)
+    if rg is not None:
+        s, _ = band(rg, [(-5, 2), (5, 3.5), (15, 5.5), (25, 7.5)], 10)
+        reasons.append(f"营收增速 {rg:+.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_munger(fin, val):
+    """芒格大师 - 好生意好价格: 低负债+高ROE+低估（Lollapalooza 共振）"""
+    reasons, scores = [], []
+    dr = fin.get("debt_ratio")
+    roe = fin.get("roe")
+    pe = val.get("pe_ttm")
+    pb = val.get("pb")
+    if dr is not None:
+        s, _ = band(dr, [(30, 9), (50, 7), (65, 5), (80, 3)], 2)
+        reasons.append(f"资产负债率 {dr:.1f}%" + ("，财务保守" if dr <= 40 else "，杠杆偏高" if dr > 60 else "，适中"))
+        scores.append(s)
+    if roe is not None:
+        s, _ = band(roe, [(8, 2.5), (12, 4.5), (18, 7), (25, 8.5)], 10)
+        reasons.append(f"ROE {roe:.1f}%")
+        scores.append(s)
+    if pe is not None and pe > 0:
+        s, _ = band(pe, [(12, 9), (20, 7), (30, 5), (45, 3)], 2)
+        reasons.append(f"PE(TTM) {pe:.1f} 倍")
+        scores.append(s)
+    if pb is not None:
+        s, _ = band(pb, [(1.5, 9), (3, 7), (5, 5), (8, 3)], 1)
+        reasons.append(f"PB {pb:.2f} 倍")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_marks(hist):
+    """马克斯大师 - 周期钟摆: 情绪极端处反着做（第二层思维）"""
+    reasons, scores = [], []
+    yoy = hist.get("yoy_pct")
+    off = hist.get("off_high_pct")
+    if yoy is not None:
+        if yoy >= 60:
+            s, desc = 2.0, "一年涨逾60%, 情绪过热, 钟摆近顶"
+        elif yoy >= 30:
+            s, desc = 3.5, f"一年涨 {yoy:.0f}%, 情绪偏热"
+        elif yoy >= 10:
+            s, desc = 5.5, f"温和上涨 {yoy:.0f}%, 钟摆中位"
+        elif yoy >= -10:
+            s, desc = 6.5, f"小幅波动 {yoy:+.0f}%, 情绪平淡"
+        elif yoy >= -30:
+            s, desc = 8.0, f"回调 {yoy:.0f}%, 悲观酝酿机会"
+        else:
+            s, desc = 9.0, f"深度回调 {yoy:.0f}%, 逆向布局时机"
+        reasons.append(f"近一年 {yoy:+.1f}%, {desc}")
+        scores.append(s)
+    if off is not None and yoy is not None:
+        dd = -off
+        if dd >= 20:
+            s, d = 8.5, f"距高点回撤 {dd:.0f}%, 风险释放充分"
+        elif dd >= 10:
+            s, d = 6.5, f"距高点回撤 {dd:.0f}%, 部分释放"
+        elif dd >= 3:
+            s, d = 4.5, "贴近高点, 情绪偏乐观"
+        else:
+            s, d = 2.5, "接近历史高位, 警惕亢奋"
+        reasons.append(d)
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_soros(hist):
+    """索罗斯大师 - 反身性: 趋势加速与自我强化"""
+    reasons, scores = [], []
+    t20 = hist.get("trend_20")
+    t60 = hist.get("trend_60")
+    off = hist.get("off_high_pct")
+    if t20 is not None and t60 is not None:
+        acc = t20 - t60
+        if acc >= 4:
+            s, d = 8.0, f"短期强度领先长期 {acc:+.1f}pt, 趋势加速"
+        elif acc >= 0:
+            s, d = 6.5, f"短长期价差 {acc:+.1f}pt, 趋势延续"
+        elif acc >= -5:
+            s, d = 4.5, f"趋势减速 {acc:+.1f}pt"
+        else:
+            s, d = 2.5, f"趋势明显走弱 {acc:+.1f}pt"
+        reasons.append(d)
+        scores.append(s)
+    if off is not None:
+        if off >= -5:
+            s, d = 8.5, "贴近52周高点, 反身性自我强化"
+        elif off >= -15:
+            s, d = 6.0, "处于上行通道"
+        elif off >= -30:
+            s, d = 4.0, "中位偏弱"
+        else:
+            s, d = 2.0, "远离高点, 趋势破坏"
+        reasons.append(d)
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_dalio(hist, fin):
+    """达利欧大师 - 风险平价: 低波动+低杠杆的稳健配置"""
+    reasons, scores = [], []
+    yoy = hist.get("yoy_pct")
+    dr = fin.get("debt_ratio")
+    if yoy is not None:
+        vol = abs(yoy)
+        if vol <= 8:
+            s, d = 8.0, f"年波动 {vol:.0f}%, 低波动稳健"
+        elif vol <= 25:
+            s, d = 6.5, f"年波动 {vol:.0f}%, 中等"
+        elif vol <= 50:
+            s, d = 4.0, f"年波动 {vol:.0f}%, 偏高"
+        else:
+            s, d = 2.0, f"年波动 {vol:.0f}%, 风险大"
+        reasons.append(d)
+        scores.append(s)
+    if dr is not None:
+        s, _ = band(dr, [(20, 9), (40, 7.5), (60, 5.5), (75, 3.5), (85, 2)], 2)
+        reasons.append(f"资产负债率 {dr:.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_li_lu(fin, val):
+    """李录大师 - 能力圈深度价值: 便宜+质地好（护城河折价买入）"""
+    reasons, scores = [], []
+    pe = val.get("pe_ttm")
+    pb = val.get("pb")
+    roe = fin.get("roe")
+    if pe is not None and pe > 0:
+        s, _ = band(pe, [(12, 9), (18, 7), (28, 5), (40, 3)], 2)
+        reasons.append(f"PE(TTM) {pe:.1f} 倍")
+        scores.append(s)
+    if pb is not None:
+        s, _ = band(pb, [(1, 9), (2.5, 7), (4, 5), (6.5, 3)], 1)
+        reasons.append(f"PB {pb:.2f} 倍")
+        scores.append(s)
+    if roe is not None:
+        s, _ = band(roe, [(5, 2), (10, 4), (15, 6.5), (20, 8)], 10)
+        reasons.append(f"ROE {roe:.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_duan(fin):
+    """段永平大师 - 本分: 商业模式清晰 + 少犯错（不做什么）"""
+    reasons, scores = [], []
+    dr = fin.get("debt_ratio")
+    roe = fin.get("roe")
+    rg = fin.get("revenue_growth")
+    if dr is not None:
+        s, _ = band(dr, [(30, 9), (50, 7), (65, 5), (80, 3)], 2)
+        reasons.append(f"资产负债率 {dr:.1f}%" + ("，财务本分" if dr <= 40 else "，杠杆偏高" if dr > 65 else "，适中"))
+        scores.append(s)
+    if roe is not None:
+        s, _ = band(roe, [(10, 3), (15, 5), (20, 7.5), (28, 8.5)], 10)
+        reasons.append(f"ROE {roe:.1f}%")
+        scores.append(s)
+    if rg is not None:
+        s, _ = band(rg, [(0, 3), (10, 5.5), (20, 7), (35, 8)], 10)
+        reasons.append(f"营收增速 {rg:+.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_zhang(fin, val):
+    """张磊大师 - 长期主义: 好赛道+可持续复利（做时间的朋友）"""
+    reasons, scores = [], []
+    roe = fin.get("roe")
+    pg = fin.get("profit_growth")
+    peg = val.get("peg")
+    if roe is not None:
+        s, _ = band(roe, [(10, 3), (15, 5), (20, 7), (25, 8.5)], 10)
+        reasons.append(f"ROE {roe:.1f}%")
+        scores.append(s)
+    if pg is not None:
+        s, _ = band(pg, [(0, 3), (15, 5.5), (30, 7.5), (50, 8.5)], 10)
+        reasons.append(f"净利润增速 {pg:+.1f}%")
+        scores.append(s)
+    if peg is not None and peg > 0:
+        s, _ = band(peg, [(1, 8), (1.8, 7), (2.8, 5), (4, 3)], 1)
+        reasons.append(f"PEG {peg:.2f}")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_dan_bin(fin):
+    """但斌大师 - 偏爱伟大公司: 品牌护城河+高毛利"""
+    reasons, scores = [], []
+    gm = fin.get("gross_margin")
+    nm = fin.get("net_margin")
+    pg = fin.get("profit_growth")
+    if gm is not None:
+        s, _ = band(gm, [(20, 3), (35, 5), (50, 7), (65, 8.5)], 10)
+        reasons.append(f"毛利率 {gm:.1f}%" + ("，品牌溢价强" if gm >= 50 else "，尚可" if gm >= 35 else "，偏低"))
+        scores.append(s)
+    if nm is not None:
+        s, _ = band(nm, [(10, 3), (20, 5.5), (30, 7), (40, 8.5)], 10)
+        reasons.append(f"净利率 {nm:.1f}%")
+        scores.append(s)
+    if pg is not None:
+        s, _ = band(pg, [(0, 3), (10, 5.5), (20, 7), (35, 8.5)], 10)
+        reasons.append(f"净利润增速 {pg:+.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_thiel(fin):
+    """蒂尔大师 - 从0到1: 垄断定价权（利润率高+负债低）"""
+    reasons, scores = [], []
+    nm = fin.get("net_margin")
+    gm = fin.get("gross_margin")
+    dr = fin.get("debt_ratio")
+    if nm is not None:
+        s, _ = band(nm, [(5, 2), (15, 4.5), (25, 6.5), (35, 8.5)], 10)
+        reasons.append(f"净利率 {nm:.1f}%" + ("，定价权强" if nm >= 30 else "，一般" if nm >= 15 else "，偏弱"))
+        scores.append(s)
+    if gm is not None:
+        s, _ = band(gm, [(30, 3), (45, 5), (60, 7), (75, 8.5)], 10)
+        reasons.append(f"毛利率 {gm:.1f}%")
+        scores.append(s)
+    if dr is not None:
+        s, _ = band(dr, [(40, 8), (60, 6), (75, 4), (85, 2)], 2)
+        reasons.append(f"资产负债率 {dr:.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_cathie(fin):
+    """木头姐大师 - 破坏式创新: 高增速优先（容忍高估值）"""
+    reasons, scores = [], []
+    rg = fin.get("revenue_growth")
+    pg = fin.get("profit_growth")
+    if rg is not None:
+        s, _ = band(rg, [(0, 2), (15, 4), (30, 6), (50, 8), (80, 9)], 10)
+        reasons.append(f"营收增速 {rg:+.1f}%")
+        scores.append(s)
+    if pg is not None:
+        s, _ = band(pg, [(-10, 2), (10, 4.5), (30, 6.5), (60, 8), (100, 9)], 10)
+        reasons.append(f"净利润增速 {pg:+.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
+def master_lowrisk(hist, fin):
+    """低波风控大师 - 稳字当头: 低回撤+低波动+低杠杆"""
+    reasons, scores = [], []
+    off = hist.get("off_high_pct")
+    yoy = hist.get("yoy_pct")
+    dr = fin.get("debt_ratio")
+    if off is not None:
+        dd = -off
+        if dd <= 12:
+            s, d = 8.5, f"距高点仅 {dd:.0f}%, 回撤极小"
+        elif dd <= 20:
+            s, d = 7.0, f"回撤 {dd:.0f}%, 较稳健"
+        elif dd <= 35:
+            s, d = 5.0, f"回撤 {dd:.0f}%, 承压"
+        elif dd <= 50:
+            s, d = 3.0, f"回撤 {dd:.0f}%, 高风险"
+        else:
+            s, d = 1.5, f"深度回撤 {dd:.0f}%"
+        reasons.append(d)
+        scores.append(s)
+    if yoy is not None:
+        vol = abs(yoy)
+        s, _ = band(vol, [(8, 8), (25, 6), (45, 4), (70, 2)], 1)
+        reasons.append(f"年波动幅 {vol:.0f}%")
+        scores.append(s)
+    if dr is not None:
+        s, _ = band(dr, [(30, 9), (50, 7), (65, 5), (80, 3)], 2)
+        reasons.append(f"资产负债率 {dr:.1f}%")
+        scores.append(s)
+    score = round(sum(scores) / len(scores), 1) if scores else 5.0
+    return score, reasons
+
+
 MASTER_DEFS = [
-    ("value",     "价值大师",   "经典价值 · 格雷厄姆", 0.22),
-    ("quality",   "质量大师",   "好生意 · 巴菲特",     0.20),
-    ("growth",    "成长大师",   "增长驱动 · 林奇",     0.18),
-    ("dividend",  "红利大师",   "现金回报 · A股红利",  0.15),
-    ("momentum",  "动量大师",   "趋势跟踪",           0.15),
-    ("margin",    "安全边际大师", "估值分位 · 逆向",    0.10),
+    ("value",     "价值大师",     "经典价值 · 格雷厄姆",  0.10),
+    ("quality",   "质量大师",     "好生意 · 巴菲特",      0.10),
+    ("growth",    "成长大师",     "增长驱动 · 林奇",      0.08),
+    ("dividend",  "红利大师",     "现金回报 · A股红利",   0.06),
+    ("momentum",  "动量大师",     "趋势跟踪",            0.06),
+    ("margin",    "安全边际大师", "估值分位 · 逆向",     0.06),
+    ("fisher",    "费雪大师",     "成长质量 · 费雪",     0.05),
+    ("munger",    "芒格大师",     "好生意好价格 · 芒格",  0.05),
+    ("marks",     "马克斯大师",   "周期钟摆 · 马克斯",    0.05),
+    ("soros",     "索罗斯大师",   "反身性 · 索罗斯",     0.04),
+    ("dalio",     "达利欧大师",   "风险平价 · 达利欧",   0.04),
+    ("li_lu",     "李录大师",     "能力圈 · 李录",       0.05),
+    ("duan",      "段永平大师",   "本分 · 段永平",       0.05),
+    ("zhang",     "张磊大师",     "长期主义 · 张磊",     0.05),
+    ("dan_bin",   "但斌大师",     "伟大公司 · 但斌",     0.04),
+    ("thiel",     "蒂尔大师",     "从0到1 · 蒂尔",       0.04),
+    ("cathie",    "木头姐大师",   "颠覆创新 · 木头姐",   0.04),
+    ("lowrisk",   "低波风控大师", "稳字当头 · 风控",     0.04),
 ]
 
 
@@ -702,6 +1017,18 @@ def analyze(code):
         "dividend": lambda: master_dividend(div, val),
         "momentum": lambda: master_momentum(hist),
         "margin": lambda: master_margin(val),
+        "fisher": lambda: master_fisher(fin),
+        "munger": lambda: master_munger(fin, val),
+        "marks": lambda: master_marks(hist),
+        "soros": lambda: master_soros(hist),
+        "dalio": lambda: master_dalio(hist, fin),
+        "li_lu": lambda: master_li_lu(fin, val),
+        "duan": lambda: master_duan(fin),
+        "zhang": lambda: master_zhang(fin, val),
+        "dan_bin": lambda: master_dan_bin(fin),
+        "thiel": lambda: master_thiel(fin),
+        "cathie": lambda: master_cathie(fin),
+        "lowrisk": lambda: master_lowrisk(hist, fin),
     }
     total, wsum = 0.0, 0.0
     dist = {"bullish": 0, "neutral": 0, "bearish": 0}

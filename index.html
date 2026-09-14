@@ -142,7 +142,7 @@
     </div>
     <div>
       <h1>A股/B股/港股大师分析</h1>
-      <div class="sub">六位投资大师视角 · A股+B股+港股 · 东财/同花顺/新浪/百度数据</div>
+      <div class="sub">十八位投资大师视角 · A股+B股+港股 · 东财/同花顺/新浪/百度数据</div>
     </div>
   </header>
 
@@ -167,7 +167,7 @@
       快捷: <a onclick="quick('600900')">600900 长江电力</a><a onclick="quick('601398')">601398 工商银行</a><a onclick="quick('600519')">600519 贵州茅台</a><a onclick="quick('200596')">200596 古井贡B</a><a onclick="quick('00700')">00700 腾讯控股</a>
     </div>
     <div id="result">
-      <div class="status">输入股票代码开始分析<br><span style="font-size:12px">A股6位 / B股6位(200/900开头) / 港股1-5位 · 六位大师独立打分并形成加权共识</span></div>
+      <div class="status">输入股票代码开始分析<br><span style="font-size:12px">A股/B股/港股 · 十八位大师独立打分并形成加权共识</span></div>
     </div>
   </div>
 
@@ -240,7 +240,7 @@
   </footer>
 </div>
 <script>
-const ICONS={value:'<path d="M6 3h12M9 3v8.5a3 3 0 0 0 3 3 3 3 0 0 1 3 3V21H9"/>',quality:'<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',growth:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',dividend:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',momentum:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',margin:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .65-.94l7-2.5a1 1 0 0 1 .7 0l7 2.5A1 1 0 0 1 20 6Z"/>'};
+const ICONS={value:'<path d="M6 3h12M9 3v8.5a3 3 0 0 0 3 3 3 3 0 0 1 3 3V21H9"/>',quality:'<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',growth:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',dividend:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',momentum:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',margin:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .65-.94l7-2.5a1 1 0 0 1 .7 0l7 2.5A1 1 0 0 1 20 6Z"/>',fisher:'<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 1.3 0 1.9-.5 2.5-1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 1.3 0 1.9-.5 2.5-1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 1.3 0 1.9-.5 2.5-1"/>',munger:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',marks:'<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',soros:'<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',dalio:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',li_lu:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',duan:'<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',zhang:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',dan_bin:'<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.735H5.81a1 1 0 0 1-.957-.735L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',thiel:'<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',cathie:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',lowrisk:'<path d="M22 12a10.06 10.06 0 0 0-20 0Z"/><path d="M12 12v8a2 2 0 0 0 4 0"/><path d="M12 2v2"/>'};
 function icon(id){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ICONS[id]+'</svg>';}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 

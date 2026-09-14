@@ -3,19 +3,19 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '1f812c3b-d85f-42c6-b690-42cc7f875481'
-  PropagateID: '1f812c3b-d85f-42c6-b690-42cc7f875481'
-  ReservedCode1: '8b5b3090-32e5-4f53-8b73-73d317377bc4'
-  ReservedCode2: '8b5b3090-32e5-4f53-8b73-73d317377bc4'
+  ProduceID: '31f99d31-2927-454e-bbef-bb7b49af34cd'
+  PropagateID: '31f99d31-2927-454e-bbef-bb7b49af34cd'
+  ReservedCode1: '30981294-7313-408b-ba36-26770005d56e'
+  ReservedCode2: '30981294-7313-408b-ba36-26770005d56e'
 ---
 
 <div align="center">
 
 # StockMasters
 
-**六位投资大师视角 · A股/B股/港股多市场投资分析系统**
+**十八位投资大师视角 · A股/B股/港股多市场投资分析系统**
 
-Six Investment Masters · Multi-Market Stock Analysis for A-Shares, B-Shares & Hong Kong Stocks
+Eighteen Investment Masters · Multi-Market Stock Analysis for A-Shares, B-Shares & Hong Kong Stocks
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat-square)](https://www.python.org/)
 [![akshare](https://img.shields.io/badge/Data-akshare-orange?style=flat-square)](https://akshare.akfamily.xyz/)
@@ -28,7 +28,7 @@ Six Investment Masters · Multi-Market Stock Analysis for A-Shares, B-Shares & H
 
 ## 中文介绍
 
-输入一个股票代码，六位投资大师从各自视角独立打分，形成加权共识裁决——买入、持有还是卖出。
+输入一个股票代码，十八位投资大师从各自视角独立打分，形成加权共识裁决——买入、持有还是卖出。
 
 ### 界面截图
 
@@ -59,8 +59,8 @@ Six Investment Masters · Multi-Market Stock Analysis for A-Shares, B-Shares & H
 ### 核心特点
 
 - **三大市场全覆盖**：A股（沪深600/000/300/688）、B股（深B 200/沪B 900）、港股（1-5位代码），自动识别市场类型
-- **六位投资大师独立评分**：价值大师（格雷厄姆）、质量大师（巴菲特）、成长大师（林奇）、红利大师、动量大师、安全边际大师——每位大师用不同指标体系打分，互不干扰
-- **加权共识裁决**：六位大师按权重综合，输出 0-10 分评分 + 买入/持有/卖出信号 + 置信度 + 多空分布
+- **十八位投资大师独立评分**：覆盖价值、质量、成长、红利、动量、安全边际六大核心维度，并借鉴 Augur 加入费雪、芒格、马克斯、索罗斯、达利欧、李录、段永平、张磊、但斌、蒂尔、木头姐、低波风控等十二位大师——每位大师用不同指标体系打分，互不干扰
+- **加权共识裁决**：十八位大师按权重综合，输出 0-10 分评分 + 买入/持有/卖出信号 + 置信度 + 多空分布
 - **自选股批量分析**：添加自选股后一键批量分析，结果以表格展示，点击即可跳转个股详情
 - **分析历史记录**：每次分析自动存档，支持按代码/信号/日期筛选，点击记录可重新查看
 - **定时盘后自动推送**：设置每日收盘时间自动分析自选股，通过飞书/企微 Webhook 推送结果
@@ -68,16 +68,28 @@ Six Investment Masters · Multi-Market Stock Analysis for A-Shares, B-Shares & H
 - **零外部依赖前端**：纯原生 HTML/CSS/JS，白底淡蓝风格，无 React/Vue/jQuery，双击即运行
 - **一键启停**：BAT 脚本启动/停止，无需命令行操作
 
-### 六位大师评分体系
+### 十八位大师评分体系
 
 | 大师 | 流派 | 权重 | 核心指标 |
 |------|------|:---:|----------|
-| 价值大师 | 经典价值 · 格雷厄姆 | 22% | PE、PB、PEG |
-| 质量大师 | 好生意 · 巴菲特 | 20% | ROE、毛利率、净利率、资产负债率 |
-| 成长大师 | 增长驱动 · 林奇 | 18% | 净利润增速、营收增速、增长持续性 |
-| 红利大师 | 现金回报 | 15% | 股息率、每股分红 |
-| 动量大师 | 趋势跟踪 | 15% | 20日线偏离、52周高低、年度涨跌 |
-| 安全边际大师 | 估值分位 · 逆向 | 10% | PE/价格近3年历史分位 |
+| 价值大师 | 经典价值 · 格雷厄姆 | 10% | PE、PB、PEG |
+| 质量大师 | 好生意 · 巴菲特 | 10% | ROE、毛利率、净利率、资产负债率 |
+| 成长大师 | 增长驱动 · 林奇 | 8% | 净利润增速、营收增速、增长持续性 |
+| 红利大师 | 现金回报 | 6% | 股息率、每股分红 |
+| 动量大师 | 趋势跟踪 | 6% | 20日线偏离、52周高低、年度涨跌 |
+| 安全边际大师 | 估值分位 · 逆向 | 6% | PE/价格近3年历史分位 |
+| 费雪大师 | 成长质量 | 5% | ROE、毛利率、营收增速 |
+| 芒格大师 | 好生意好价格 | 5% | 低负债、高ROE、低估值 |
+| 马克斯大师 | 周期钟摆 | 5% | 年度涨跌、距高点回撤 |
+| 索罗斯大师 | 反身性 | 4% | 短长期趋势差、52周位置 |
+| 达利欧大师 | 风险平价 | 4% | 年波动、资产负债率 |
+| 李录大师 | 能力圈 · 深度价值 | 5% | PE、PB、ROE |
+| 段永平大师 | 本分 · 商业模式 | 5% | 负债率、ROE、营收增速 |
+| 张磊大师 | 长期主义 | 5% | ROE、净利润增速、PEG |
+| 但斌大师 | 伟大公司 · 品牌护城河 | 4% | 毛利率、净利率、净利润增速 |
+| 蒂尔大师 | 从0到1 · 垄断 | 4% | 净利率、毛利率、负债率 |
+| 木头姐大师 | 颠覆创新 | 4% | 营收增速、净利润增速 |
+| 低波风控大师 | 稳字当头 · 风控 | 4% | 距高点回撤、年波动、负债率 |
 
 ### 快速开始
 
@@ -116,12 +128,12 @@ venv\Scripts\python.exe server.py
 
 ## English
 
-Enter a stock code, and six investment masters analyze it from their respective perspectives, forming a weighted consensus verdict — Buy, Hold, or Sell.
+Enter a stock code, and eighteen investment masters analyze it from their respective perspectives, forming a weighted consensus verdict — Buy, Hold, or Sell.
 
 ### Key Features
 
 - **Three Markets Covered**: A-Shares (Shanghai/Shenzhen 600/000/300/688), B-Shares (Shenzhen 200 / Shanghai 900), Hong Kong Stocks (1-5 digit codes) — auto-detected
-- **Six Master Agents**: Value (Graham), Quality (Buffett), Growth (Lynch), Dividend, Momentum, and Margin of Safety — each scores independently using distinct indicator frameworks
+- **Eighteen Master Agents**: Value (Graham), Quality (Buffett), Growth (Lynch), Dividend, Momentum, Margin of Safety — plus Fisher, Munger, Marks, Soros, Dalio, Li Lu, Duan Yongping, Zhang Lei, Dan Bin, Thiel, Cathie Wood, and Low-Volatility Risk Control, inspired by Augur — each scores independently using distinct indicator frameworks
 - **Weighted Consensus**: Masters' scores combine into a 0-10 rating with Buy/Hold/Sell signal, confidence level, and bull/neutral/bear distribution
 - **Watchlist Batch Analysis**: Add stocks to watchlist and analyze all at once, results in sortable table, click to drill into details
 - **Analysis History**: Every analysis auto-archived, filterable by code/signal/date, click to re-view
@@ -133,19 +145,31 @@ Enter a stock code, and six investment masters analyze it from their respective 
 ### How It Works
 
 ```
-Stock Code → Market Detection → Data Fetch (akshare) → 6 Masters Score → Weighted Consensus → Dashboard
+Stock Code → Market Detection → Data Fetch (akshare) → 18 Masters Score → Weighted Consensus → Dashboard
 ```
 
 Each master evaluates the stock using its own indicator set:
 
 | Master | School | Weight | Key Metrics |
 |--------|--------|:---:|-------------|
-| Value | Graham | 22% | PE, PB, PEG |
-| Quality | Buffett | 20% | ROE, Gross/Net Margin, Debt Ratio |
-| Growth | Lynch | 18% | Profit/Revenue Growth, Growth Streak |
-| Dividend | Income | 15% | Dividend Yield, Per-Share Dividend |
-| Momentum | Trend | 15% | 20-Day Deviation, 52W High/Low, YoY Change |
-| Margin of Safety | Contrarian | 10% | 3-Year PE/Price Percentile |
+| Value | Graham | 10% | PE, PB, PEG |
+| Quality | Buffett | 10% | ROE, Gross/Net Margin, Debt Ratio |
+| Growth | Lynch | 8% | Profit/Revenue Growth, Growth Streak |
+| Dividend | Income | 6% | Dividend Yield, Per-Share Dividend |
+| Momentum | Trend | 6% | 20-Day Deviation, 52W High/Low, YoY Change |
+| Margin of Safety | Contrarian | 6% | 3-Year PE/Price Percentile |
+| Fisher | Quality Growth | 5% | ROE, Gross Margin, Revenue Growth |
+| Munger | Good Business, Fair Price | 5% | Low Debt, High ROE, Low Valuation |
+| Marks | Cycle Pendulum | 5% | YoY Change, Drawdown from High |
+| Soros | Reflexivity | 4% | Short/Long Trend Spread, 52W Position |
+| Dalio | Risk Parity | 4% | Annual Volatility, Debt Ratio |
+| Li Lu | Circle of Competence | 5% | PE, PB, ROE |
+| Duan Yongping | Benben / Business Model | 5% | Debt Ratio, ROE, Revenue Growth |
+| Zhang Lei | Long-termism | 5% | ROE, Profit Growth, PEG |
+| Dan Bin | Great Company / Brand Moat | 4% | Gross/Net Margin, Profit Growth |
+| Peter Thiel | 0-to-1 Monopoly | 4% | Net Margin, Gross Margin, Debt Ratio |
+| Cathie Wood | Disruptive Innovation | 4% | Revenue/Profit Growth |
+| Low Volatility | Defensive Risk Control | 4% | Drawdown, Annual Volatility, Debt Ratio |
 
 ### Data Source Strategy
 
