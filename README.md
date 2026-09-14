@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '31f99d31-2927-454e-bbef-bb7b49af34cd'
-  PropagateID: '31f99d31-2927-454e-bbef-bb7b49af34cd'
-  ReservedCode1: '30981294-7313-408b-ba36-26770005d56e'
-  ReservedCode2: '30981294-7313-408b-ba36-26770005d56e'
+  ProduceID: '64ac7ad2-f997-4702-baa9-36c1af6c4400'
+  PropagateID: '64ac7ad2-f997-4702-baa9-36c1af6c4400'
+  ReservedCode1: 'bc18aef7-c1be-4434-be85-3bdb7aedd530'
+  ReservedCode2: 'bc18aef7-c1be-4434-be85-3bdb7aedd530'
 ---
 
 <div align="center">
@@ -61,9 +61,11 @@ Eighteen Investment Masters · Multi-Market Stock Analysis for A-Shares, B-Share
 - **三大市场全覆盖**：A股（沪深600/000/300/688）、B股（深B 200/沪B 900）、港股（1-5位代码），自动识别市场类型
 - **十八位投资大师独立评分**：覆盖价值、质量、成长、红利、动量、安全边际六大核心维度，并借鉴 Augur 加入费雪、芒格、马克斯、索罗斯、达利欧、李录、段永平、张磊、但斌、蒂尔、木头姐、低波风控等十二位大师——每位大师用不同指标体系打分，互不干扰
 - **加权共识裁决**：十八位大师按权重综合，输出 0-10 分评分 + 买入/持有/卖出信号 + 置信度 + 多空分布
+- **自选股批量导入**：支持空格/逗号/换行/顿号分隔的代码粘贴，一键导入并自动去重（最多 100 只）
 - **自选股批量分析**：添加自选股后一键批量分析，结果以表格展示，点击即可跳转个股详情
-- **分析历史记录**：每次分析自动存档，支持按代码/信号/日期筛选，点击记录可重新查看
-- **定时盘后自动推送**：设置每日收盘时间自动分析自选股，通过飞书/企微 Webhook 推送结果
+- **分析历史记录**：每次分析自动存档（含 18 位大师明细评分），支持按代码/信号/日期筛选，点击记录可重新查看
+- **定时盘后自动推送**：每日定时（默认 18:00）自动分析自选股，通过飞书 Webhook 推送结果（与 Sequoia-X 等共用群机器人）
+- **评分异动预警**：推送消息自动对比上次评分，综合分变动 ≥1.0 分的股票带 ⚠️ 异动标注，并分析主因（分差最大的大师观点变化）
 - **国内数据源直连**：基于 akshare 开源库，数据来自东方财富、同花顺、新浪财经、百度估值，无需翻墙，受限内网环境可用
 - **零外部依赖前端**：纯原生 HTML/CSS/JS，白底淡蓝风格，无 React/Vue/jQuery，双击即运行
 - **一键启停**：BAT 脚本启动/停止，无需命令行操作
@@ -135,9 +137,11 @@ Enter a stock code, and eighteen investment masters analyze it from their respec
 - **Three Markets Covered**: A-Shares (Shanghai/Shenzhen 600/000/300/688), B-Shares (Shenzhen 200 / Shanghai 900), Hong Kong Stocks (1-5 digit codes) — auto-detected
 - **Eighteen Master Agents**: Value (Graham), Quality (Buffett), Growth (Lynch), Dividend, Momentum, Margin of Safety — plus Fisher, Munger, Marks, Soros, Dalio, Li Lu, Duan Yongping, Zhang Lei, Dan Bin, Thiel, Cathie Wood, and Low-Volatility Risk Control, inspired by Augur — each scores independently using distinct indicator frameworks
 - **Weighted Consensus**: Masters' scores combine into a 0-10 rating with Buy/Hold/Sell signal, confidence level, and bull/neutral/bear distribution
+- **Watchlist Bulk Import**: Paste codes separated by spaces/commas/newlines, one-click import with auto-deduplication (up to 100 stocks)
 - **Watchlist Batch Analysis**: Add stocks to watchlist and analyze all at once, results in sortable table, click to drill into details
-- **Analysis History**: Every analysis auto-archived, filterable by code/signal/date, click to re-view
-- **Scheduled Post-Close Push**: Set daily auto-analysis time, push results to Feishu/WeCom Webhook
+- **Analysis History**: Every analysis auto-archived (with all 18 master scores), filterable by code/signal/date, click to re-view
+- **Scheduled Post-Close Push**: Daily auto-analysis at a set time (default 18:00), push results to Feishu Webhook (shares the same group bot with Sequoia-X)
+- **Score Change Alerts**: Push messages auto-compare with previous scores; stocks with consensus change ≥1.0 get ⚠️ flag with root-cause analysis (the master whose view shifted the most)
 - **Domestic Data Sources**: Built on akshare (open-source), data from East Money, 10jqka (THS), Sina Finance, and Baidu Valuation — works behind corporate firewalls without VPN
 - **Zero-Dependency Frontend**: Pure HTML/CSS/JS, no React/Vue/jQuery, clean blue-on-white design, runs by double-clicking
 - **One-Click Start/Stop**: BAT scripts included, no command-line knowledge required

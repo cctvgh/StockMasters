@@ -87,11 +87,16 @@
   /* 自选股 */
   .wl-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:16px;}
   .wl-section h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
-  .wl-input{display:flex;gap:8px;margin-bottom:14px;}
-  .wl-input input{flex:1;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px;outline:none;}
-  .wl-input input:focus{border-color:var(--blue);}
-  .wl-input button{height:38px;padding:0 16px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
-  .wl-input button:hover{background:#245a97;}
+.wl-input{display:flex;gap:8px;margin-bottom:14px;}
+.wl-input input{flex:1;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px;outline:none;}
+.wl-input input:focus{border-color:var(--blue);}
+.wl-input button{height:38px;padding:0 16px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
+.wl-input button:hover{background:#245a97;}
+.wl-import{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:12px;background:var(--blue-light);border:1px dashed var(--blue);border-radius:10px;}
+.wl-import textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;}
+.wl-import textarea:focus{border-color:var(--blue);}
+.wl-import .btn-primary{height:34px;padding:0 14px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.wl-import .btn-primary:hover{background:#245a97;}
   .wl-list{display:flex;flex-wrap:wrap;gap:8px;}
   .wl-chip{display:flex;align-items:center;gap:6px;background:var(--blue-light);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:13px;}
   .wl-chip .rm{cursor:pointer;color:var(--text3);font-size:16px;line-height:1;}
@@ -179,6 +184,10 @@
         <input id="wl-code" placeholder="输入股票代码添加到自选股" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')wlAdd()">
         <button onclick="wlAdd()">添加</button>
       </div>
+      <div class="wl-import">
+        <textarea id="wl-import-text" rows="3" placeholder="批量导入: 粘贴股票代码, 支持空格/逗号/换行分隔&#10;例: 600900, 601398 000807&#10;200596  00700"></textarea>
+        <button class="btn-primary" style="flex:none;align-self:flex-end;" onclick="wlImport()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>批量导入自选股</button>
+      </div>
       <div id="wl-chips" class="wl-list"></div>
       <div class="wl-actions">
         <button class="btn-primary" id="wl-batch-btn" onclick="wlBatch()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.86 6.7 2.3"/><path d="M21 3v6h-6"/></svg>批量分析</button>
@@ -215,12 +224,15 @@
       <div id="cron-status"></div>
       <div class="cron-field">
         <label>每日分析时间</label>
-        <input id="cron-time" type="time" value="15:30">
+        <input id="cron-time" type="time" value="18:00">
         <span class="hint">收盘后自动分析自选股</span>
       </div>
       <div class="cron-field">
-        <label>Webhook 地址</label>
-        <input id="cron-webhook" placeholder="飞书/企微 Webhook URL (可选)" type="text">
+        <label>飞书 Webhook</label>
+        <input id="cron-webhook" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx" type="text">
+      </div>
+      <div class="cron-field" style="flex-direction:column;gap:4px;align-items:stretch;">
+        <span class="hint">获取方式: 飞书群 → 设置 → 群机器人 → 添加机器人 → 自定义机器人, 复制 Webhook 地址填入 (与 Sequoia-X 选股推送共用同一个群机器人即可)。评分较上次变动 ≥1.0 分的股票将带 ⚠️ 异动标注与原因分析。</span>
       </div>
       <div class="cron-field">
         <label>自选股列表</label>
@@ -297,6 +309,19 @@ function wlAdd(){
   if(c.length<1||c.length>6){alert('请输入有效股票代码');return;}
   const l=wlGet();if(!l.includes(c)){l.push(c);wlSet(l);}
   document.getElementById('wl-code').value='';
+}
+async function wlImport(){
+  const text=document.getElementById('wl-import-text').value;
+  if(!text.trim()){alert('请粘贴要导入的股票代码');return;}
+  try{
+    const r=await fetch('/api/watchlist/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const d=await r.json();
+    if(d.error){alert('导入失败: '+d.error);return;}
+    localStorage.setItem('stockmasters_wl',JSON.stringify(d.watchlist));
+    wlRender();
+    document.getElementById('wl-import-text').value='';
+    alert('批量导入成功\n新增 '+d.imported+' 只, 当前自选股共 '+d.total+' 只\n(已同步到定时任务)');
+  }catch(e){alert('导入失败: '+e.message);}
 }
 function wlRemove(c){wlSet(wlGet().filter(x=>x!==c));}
 function wlClear(){if(confirm('确定清空自选股?'))wlSet([]);}

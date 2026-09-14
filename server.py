@@ -1110,6 +1110,8 @@ def _save_history(result):
             "time": result["timestamp"],
             "confidence": result["consensus"]["confidence"],
             "distribution": result["consensus"]["distribution"],
+            "masters": [{"id": m["id"], "name": m["name"], "score": m["score"]}
+                        for m in result.get("masters", [])],
         }
         history.append(entry)
         # 保留最近 2000 条
@@ -1145,7 +1147,7 @@ def load_settings():
             return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
         except Exception:
             pass
-    return {"cron_time": "15:30", "webhook_url": "", "watchlist": []}
+    return {"cron_time": "18:00", "webhook_url": "", "watchlist": []}
 
 def save_settings(s):
     SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -1155,26 +1157,112 @@ _cron_timer = None
 _cron_lock = threading.Lock()
 
 def _send_webhook(url, results):
-    """推送分析结果到飞书/企微 Webhook"""
+    """推送分析结果到飞书/企微 Webhook (参考 sequoia-x 飞书推送方式, 异动特别标注)"""
     if not url:
         return
-    lines = [f"StockMasters 盘后分析报告 ({time.strftime('%Y-%m-%d %H:%M')})\n"]
+    diff_count = sum(1 for r in results if r.get("_diff"))
+    title = f"📊 StockMasters 大师共识报告 ({time.strftime('%m-%d %H:%M')})"
+    if diff_count:
+        title += f" · {diff_count} 只异动"
+    lines = [title + "\n"]
+    # 异动的股票优先展示
+    results = sorted(results, key=lambda r: (0 if r.get("_diff") else 1, -(r.get("consensus", {}).get("score", 0))))
+    groups = {"买入倾向": [], "持有偏多": [], "持有": [], "卖出倾向": []}
     for r in results:
         c = r.get("consensus", {})
-        p = r.get("price", {})
-        lines.append(
-            f"{'🟢' if c.get('score',0)>=6.5 else '🟡' if c.get('score',0)>=3.5 else '🔴'} "
-            f"{r.get('name','?')}({r.get('code','?')})  评分{c.get('score',0)}  {c.get('signal','?')}\n"
-            f"  价格:{p.get('price','?')}  置信度:{int(c.get('confidence',0)*100)}%"
-        )
+        sig = c.get("signal", "持有")
+        key = sig if sig in groups else "持有"
+        groups[key].append(r)
+    for sig, items in groups.items():
+        if not items:
+            continue
+        mark = "🟢" if sig == "买入倾向" else "🟡" if sig in ("持有偏多", "持有") else "🔴"
+        lines.append(f"{mark} 【{sig}】{len(items)} 只")
+        for r in items:
+            c = r.get("consensus", {})
+            p = r.get("price", {})
+            dist = c.get("distribution", {})
+            flag = " ⚠️" if r.get("_diff") else ""
+            lines.append(
+                f"  {r.get('name','?')}({r.get('code','?')}) {c.get('score',0)}分{flag}\n"
+                f"    价:{p.get('price','?')} 多{dist.get('bullish',0)}/中{dist.get('neutral',0)}/空{dist.get('bearish',0)} 置信{int(c.get('confidence',0)*100)}%"
+            )
+            if r.get("_diff"):
+                lines.append(f"    {r['_diff']}")
+    if diff_count:
+        lines.append("\n⚠️ 异动 = 综合评分较上次变动 ≥1.0 分, 主因为分差最大的大师观点变化")
     payload = {"msg_type": "text", "content": {"text": "\n".join(lines)}}
     try:
-        _req.post(url, json=payload, timeout=15)
+        resp = _req.post(url, json=payload, timeout=15)
+        resp.raise_for_status()
     except Exception:
         pass
 
+def parse_codes(text):
+    """解析自选股文本: 支持逗号/空格/换行/顿号分隔, 自动去重去非法, 返回 (codes, invalid)"""
+    codes, seen = [], set()
+    for token in re.split(r"[\s,，、;\n]+", text or ""):
+        token = token.strip()
+        m = re.match(r"^(\d{1,6})$", token)
+        if m:
+            code = m.group(1)
+            if code not in seen:
+                seen.add(code)
+                codes.append(code)
+    return codes
+
+
+def _prev_record_for(code):
+    """读取该代码最近一条历史记录 (须在 analyze 之前调用, 否则取到的是本次)"""
+    try:
+        if not HISTORY_FILE.exists():
+            return None
+        history = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
+        for h in reversed(history):
+            if h.get("code") == code and h.get("score") is not None:
+                return h
+    except Exception:
+        pass
+    return None
+
+
+def _score_diff(prev, result):
+    """对比上次与本次评分, 返回异动描述文本; 无明显异动返回 None.
+    判定: 综合分差绝对值 >= 1.0 视为异动; 主因取分差最大的大师(>=0.5)."""
+    if not prev:
+        return None
+    try:
+        prev_score = float(prev.get("score"))
+    except (TypeError, ValueError):
+        return None
+    curr_score = result["consensus"]["score"]
+    delta = round(curr_score - prev_score, 1)
+    if abs(delta) < 1.0:
+        return None
+    direction = "上调" if delta > 0 else "下调"
+    desc = [f"综合分 {prev_score}→{curr_score} ({delta:+.1f})"]
+    # 找出变化最大的大师作为主因
+    prev_m = {m.get("id"): m.get("score") for m in prev.get("masters", []) if m.get("id")}
+    best = None  # (abs差, 大师, 差值)
+    for m in result.get("masters", []):
+        ps = prev_m.get(m["id"])
+        if ps is None:
+            continue
+        try:
+            d = round(float(m["score"]) - float(ps), 1)
+        except (TypeError, ValueError):
+            continue
+        if abs(d) >= 0.5 and (best is None or abs(d) > best[0]):
+            best = (abs(d), m, d)
+    if best:
+        _, m, d = best
+        reason = "；".join(str(x) for x in m.get("reasons", [])[:2])
+        desc.append(f"主因: {m['name']} {d:+.1f}分 ({reason})" if reason else f"主因: {m['name']} {d:+.1f}分")
+    return f"⚠️ 异动·{direction}: " + " | ".join(desc)
+
+
 def _run_cron():
-    """执行一次定时分析"""
+    """执行一次定时分析 (对比上次评分, 异动特别标注)"""
     s = load_settings()
     watchlist = s.get("watchlist", [])
     if not watchlist:
@@ -1182,7 +1270,9 @@ def _run_cron():
     results = []
     for code in watchlist:
         try:
+            prev = _prev_record_for(code)   # 先取上次记录 (analyze 会写入本次)
             r = analyze(code)
+            r["_diff"] = _score_diff(prev, r)
             results.append(r)
             time.sleep(1)
         except Exception:
@@ -1198,7 +1288,7 @@ def schedule_cron():
             _cron_timer.cancel()
             _cron_timer = None
         s = load_settings()
-        cron_time = s.get("cron_time", "15:30")
+        cron_time = s.get("cron_time", "18:00")
         try:
             hour, minute = map(int, cron_time.split(":"))
         except Exception:
@@ -1303,6 +1393,35 @@ class Handler(BaseHTTPRequestHandler):
                 schedule_cron()
                 self._send(json.dumps({"status": "ok"}, ensure_ascii=False),
                            "application/json; charset=utf-8")
+            except Exception as e:
+                self._send(json.dumps({"error": str(e)}, ensure_ascii=False),
+                           "application/json; charset=utf-8", 400)
+
+        elif parsed.path == "/api/watchlist/import":
+            try:
+                data = json.loads(body)
+                text = data.get("text", "")
+                codes = parse_codes(text)
+                if not codes:
+                    self._send(json.dumps({"error": "未识别到有效股票代码"}, ensure_ascii=False),
+                               "application/json; charset=utf-8", 400)
+                    return
+                s = load_settings()
+                old = s.get("watchlist", [])
+                merged = list(dict.fromkeys(old + codes))
+                if len(merged) > 100:
+                    self._send(json.dumps({"error": "自选股最多 100 只"}, ensure_ascii=False),
+                               "application/json; charset=utf-8", 400)
+                    return
+                s["watchlist"] = merged
+                save_settings(s)
+                schedule_cron()
+                self._send(json.dumps({
+                    "status": "ok",
+                    "imported": len(merged) - len(old),
+                    "total": len(merged),
+                    "watchlist": merged,
+                }, ensure_ascii=False), "application/json; charset=utf-8")
             except Exception as e:
                 self._send(json.dumps({"error": str(e)}, ensure_ascii=False),
                            "application/json; charset=utf-8", 400)
